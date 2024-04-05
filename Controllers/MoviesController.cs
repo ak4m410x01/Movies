@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.JSInterop.Infrastructure;
 using Movies.API.Dtos;
 using Movies.API.Models;
 
@@ -19,6 +18,30 @@ namespace Movies.API.Controllers
 
         private List<string> _allowedPosterExtensions = new List<string>() { ".jpg", ".png" };
         private long _maxAllowedPosterSize = 1_048_576;
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllAsync()
+        {
+            var movies = await _context.Movies
+                .Include(m => m.Genre)
+                .OrderByDescending(m => m.Rate)
+                .Select(m => new
+                {
+                    m.Id,
+                    m.Title,
+                    m.Year,
+                    m.Rate,
+                    m.Storeline,
+                    Genre = new
+                    {
+                        m.Genre.Id,
+                        m.Genre.Name
+                    },
+                    m.Poster,
+                })
+                .ToListAsync();
+            return Ok(movies);
+        }
 
         [HttpPost]
         public async Task<IActionResult> CreateAsync([FromForm] MovieDto dto)
@@ -55,6 +78,70 @@ namespace Movies.API.Controllers
             await _context.Movies.AddAsync(movie);
             await _context.SaveChangesAsync();
             return Ok(movie);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetByIdAsync(int id)
+        {
+            Movie? movie = await _context.Movies.Include(m => m.Genre).SingleOrDefaultAsync(m => m.Id == id);
+
+            if (movie is null)
+                return NotFound(new { error = $"Not Found movies with Id = {id}" });
+
+            var result = new
+            {
+                movie.Id,
+                movie.Title,
+                movie.Year,
+                movie.Rate,
+                movie.Storeline,
+                Genre = new
+                {
+                    movie.Genre.Id,
+                    movie.Genre.Name
+                },
+                movie.Poster,
+            };
+
+            return Ok(result);
+        }
+
+        [HttpGet("GetByGenreId")]
+        public async Task<IActionResult> GetByGenreIdAsync(byte genreId)
+        {
+            var movies = await _context.Movies
+                .Where(m => m.GenreId == genreId)
+                .Include(m => m.Genre)
+                .OrderByDescending(m => m.Rate)
+                .Select(m => new
+                {
+                    m.Id,
+                    m.Title,
+                    m.Year,
+                    m.Rate,
+                    m.Storeline,
+                    Genre = new
+                    {
+                        m.Genre.Id,
+                        m.Genre.Name
+                    },
+                    m.Poster,
+                })
+                .ToListAsync();
+            return Ok(movies);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteAsync(int id)
+        {
+            Movie? movie = await _context.Movies.Include(m => m.Genre).SingleOrDefaultAsync(m => m.Id == id);
+
+            if (movie is null)
+                return NotFound(new { error = $"Not Found movies with Id = {id}" });
+
+            _context.Movies.Remove(movie);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }
