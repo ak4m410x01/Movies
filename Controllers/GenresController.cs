@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Movies.API.Dtos;
 using Movies.API.Models;
+using Movies.API.Services;
 
 namespace Movies.API.Controllers
 {
@@ -9,17 +10,17 @@ namespace Movies.API.Controllers
     [ApiController]
     public class GenresController : ControllerBase
     {
-        public GenresController(ApplicationDbContext context)
+        public GenresController(IGenresService genresService)
         {
-            _context = context;
+            _genresService = genresService;
         }
 
-        private readonly ApplicationDbContext _context;
+        private readonly IGenresService _genresService;
 
         [HttpGet]
         public async Task<IActionResult> GetAllAsync()
         {
-            List<Genre> genres = await _context.Genres.OrderBy(g => g.Name).ToListAsync();
+            IEnumerable<Genre> genres = await _genresService.GetAll();
             return Ok(genres);
         }
 
@@ -27,51 +28,40 @@ namespace Movies.API.Controllers
         public async Task<IActionResult> CreateAsync(GenreDto dto)
         {
             Genre genre = new Genre() { Name = dto.Name };
-
-            await _context.Genres.AddAsync(genre);
-            await _context.SaveChangesAsync();
+            await _genresService.Add(genre);
             return Ok(genre);
         }
 
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetAsync(int id)
+        public async Task<IActionResult> GetByIdAsync(byte id)
         {
-            Genre? genre = await _context.Genres.SingleOrDefaultAsync(g => g.Id == id);
+            Genre? genre = await _genresService.GetById(id);
             if (genre is null)
-            {
                 return NotFound(new { error = $"No Genre was found with Id = {id}" });
-            }
 
             return Ok(genre);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateAsync(int id, [FromBody] GenreDto dto)
+        public async Task<IActionResult> UpdateAsync(byte id, [FromBody] GenreDto dto)
         {
-            Genre? genre = await _context.Genres.SingleOrDefaultAsync(g => g.Id == id);
+            Genre? genre = await _genresService.GetById(id);
             if (genre is null)
-            {
                 return NotFound(new { error = $"No Genre was found with Id = {id}" });
-            }
-            if (dto.Name != null)
-                genre.Name = dto.Name;
 
-            await _context.SaveChangesAsync();
+            _genresService.Update(genre);
             return Ok(genre);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteAsync(int id)
+        public async Task<IActionResult> DeleteAsync(byte id)
         {
-            Genre? genre = await _context.Genres.SingleOrDefaultAsync(g => g.Id == id);
+            Genre? genre = await _genresService.GetById(id);
             if (genre is null)
-            {
                 return NotFound(new { error = $"No Genre was found with Id = {id}" });
-            }
 
-            _context.Genres.Remove(genre);
-            await _context.SaveChangesAsync();
+            _genresService.Delete(genre);
             return NoContent();
         }
     }

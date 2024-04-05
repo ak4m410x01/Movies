@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Movies.API.Models;
+using Movies.API.Services;
 
 namespace Movies.API
 {
@@ -19,6 +20,11 @@ namespace Movies.API
 
             // Add CORS
             builder.Services.AddCors();
+
+            // Add Genre Service
+            builder.Services.AddTransient<IGenresService, GenresService>();
+            // Add Movie Service
+            builder.Services.AddTransient<IMoviesService, MoviesService>();
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
