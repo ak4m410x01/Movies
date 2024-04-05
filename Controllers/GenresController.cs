@@ -54,8 +54,9 @@ namespace Movies.API.Controllers
             {
                 return NotFound(new { error = $"No Genre was found with Id = {id}" });
             }
+            if (dto.Name != null)
+                genre.Name = dto.Name;
 
-            genre.Name = dto.Name;
             await _context.SaveChangesAsync();
             return Ok(genre);
         }
